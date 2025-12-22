@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Mantenimientos</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+    <style>
+        /* Estilos adicionales para mejor visualización */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .badge-pendiente {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .badge-completado {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .badge-reprogramado {
+            background: #17a2b8;
+            color: #fff;
+        }
+
+        .badge-alta {
+            background: #dc3545;
+            color: #fff;
+        }
+
+        .badge-media {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .badge-baja {
+            background: #6c757d;
+            color: #fff;
+        }
+
+        .text-danger {
+            color: #dc3545 !important;
+        }
+
+        .text-warning {
+            color: #ffc107 !important;
+        }
+
+        .text-success {
+            color: #28a745 !important;
+        }
+
+        .btn-action {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 2px;
+        }
+
+        .btn-view {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-edit {
+            background: #ffc107;
+            color: black;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .maintenance-details .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            width: 150px;
+            color: #495057;
+        }
+
+        .detail-value {
+            flex: 1;
+            color: #212529;
+        }
+
+        .mt-3 {
+            margin-top: 1rem !important;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        .text-muted {
+            color: #6c757d !important;
+        }
+
+        /* Estilos para FullCalendar */
+        .fc-event {
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .fc-event-title {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .fc-event-details {
+            font-size: 0.75em;
+            opacity: 0.9;
+        }
+
+        /* Estilos para la paginación */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+
+        .page-btn {
+            padding: 5px 10px;
+            border: 1px solid #dee2e6;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .page-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: #e9ecef;
+        }
+
+        .page-dots {
+            padding: 5px 10px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <h1><i class="fas fa-tools"></i> GRUPO ACASER</h1>
+            <p>Sistema de Gestión de Mantenimientos</p>
+        </div>
+        <div class="user-info">
+            <span id="userName">Cargando...</span>
+            <button id="logoutBtn" class="btn btn-danger">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <ul class="nav-menu">
+            <li class="nav-item active" data-page="dashboard">
+                <a href="#"><i class="fas fa-home"></i> <span>Dashboard</span></a>
+            </li>
+            <li class="nav-item" data-page="calendar">
+                <a href="#"><i class="fas fa-calendar-alt"></i> <span>Calendario</span></a>
+            </li>
+            <li class="nav-item" data-page="maintenance">
+                <a href="#"><i class="fas fa-cogs"></i> <span>Mantenimientos</span></a>
+            </li>
+            <li class="nav-item" data-page="logs">
+                <a href="#"><i class="fas fa-history"></i> <span>Historial</span></a>
+            </li>
+            <li class="nav-item" data-page="import">
+                <a href="#"><i class="fas fa-file-import"></i> <span>Importar</span></a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-label">Pendientes</span>
+                    <span class="stat-value" id="statPending">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Por Vencer</span>
+                    <span class="stat-value" id="statDueSoon">0</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard -->
+        <div id="dashboardPage" class="page active">
+            <div class="page-header">
+                <h2><i class="fas fa-home"></i> Dashboard</h2>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon total">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total</h3>
+                        <p id="totalCount">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Pendientes</h3>
+                        <p id="pendingCount">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Completados</h3>
+                        <p id="completedCount">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon overdue">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Vencidos</h3>
+                        <p id="overdueCount">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-exclamation-circle"></i> Mantenimientos Urgentes</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="urgentList" class="maintenance-list">
+                            <p class="text-muted">Cargando mantenimientos urgentes...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-week"></i> Próxima Semana</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="nextWeekList" class="maintenance-list">
+                            <p class="text-muted">Cargando mantenimientos de la próxima semana...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendario -->
+        <div id="calendarPage" class="page">
+            <div class="page-header">
+                <h2><i class="fas fa-calendar-alt"></i> Calendario de Mantenimientos</h2>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" id="prevMonth">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="currentMonth">Diciembre 2025</span>
+                    <button class="btn btn-secondary" id="nextMonth">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="btn btn-primary" id="todayBtn">
+                        <i class="fas fa-calendar-day"></i> Hoy
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mantenimientos -->
+        <div id="maintenancePage" class="page">
+            <div class="page-header">
+                <h2><i class="fas fa-cogs"></i> Gestión de Mantenimientos</h2>
+                <div class="page-actions">
+                    <button class="btn btn-success" id="newMaintenanceBtn">
+                        <i class="fas fa-plus"></i> Nuevo Mantenimiento
+                    </button>
+                    <button class="btn btn-primary" id="filterBtn">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+
+            <div class="filters-bar">
+                <select id="filterStatus" class="filter-select">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="completado">Completado</option>
+                    <option value="reprogramado">Reprogramado</option>
+                </select>
+
+                <select id="filterArea" class="filter-select">
+                    <option value="">Todas las áreas</option>
+                </select>
+
+                <select id="filterPriority" class="filter-select">
+                    <option value="">Todas las prioridades</option>
+                    <option value="alta">Alta</option>
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                </select>
+
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar equipo...">
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="maintenanceTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Equipo</th>
+                                    <th>Área</th>
+                                    <th>Último Servicio</th>
+                                    <th>Próximo Servicio</th>
+                                    <th>Estado</th>
+                                    <th>Prioridad</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maintenanceTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center">Cargando mantenimientos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="pagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial de Logs -->
+        <div id="logsPage" class="page">
+            <div class="page-header">
+                <h2><i class="fas fa-history"></i> Historial de Movimientos</h2>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" id="exportLogsBtn">
+                        <i class="fas fa-download"></i> Exportar
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="logsTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha Registro</th>
+                                    <th>Equipo</th>
+                                    <th>Acción</th>
+                                    <th>Anterior</th>
+                                    <th>Nuevo</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">Cargando historial...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="logsPagination"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Importar CSV -->
+        <div id="importPage" class="page">
+            <div class="page-header">
+                <h2><i class="fas fa-file-import"></i> Importar Mantenimientos</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="import-instructions">
+                        <h3><i class="fas fa-info-circle"></i> Instrucciones</h3>
+                        <p>1. Prepare un archivo CSV con las siguientes columnas:</p>
+                        <ul>
+                            <li><code>codigo</code> (opcional)</li>
+                            <li><code>area</code></li>
+                            <li><code>equipo</code></li>
+                            <li><code>descripcion</code></li>
+                            <li><code>ubicacion</code></li>
+                            <li><code>ultimo_servicio</code> (YYYY-MM-DD)</li>
+                            <li><code>periodo_dias</code> (número)</li>
+                            <li><code>prioridad</code> (alta/media/baja)</li>
+                        </ul>
+                        <p>2. El sistema calculará automáticamente la próxima fecha de servicio.</p>
+                        <p>3. Los mantenimientos existentes serán reemplazados.</p>
+
+                        <div class="import-section">
+                            <div class="file-upload">
+                                <input type="file" id="csvFile" accept=".csv">
+                                <label for="csvFile" class="btn btn-primary">
+                                    <i class="fas fa-file-upload"></i> Seleccionar Archivo CSV
+                                </label>
+                                <span id="fileName">Ningún archivo seleccionado</span>
+                            </div>
+
+                            <button id="importBtn" class="btn btn-success" disabled>
+                                <i class="fas fa-upload"></i> Importar Mantenimientos
+                            </button>
+
+                            <div class="progress-container" id="progressContainer" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFill"></div>
+                                </div>
+                                <span id="progressText">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Advertencia:</strong> Esta acción reemplazará todos los mantenimientos existentes.
+                            Se registrará en el historial de movimientos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para detalles del mantenimiento -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Detalles del Mantenimiento</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <p>Cargando detalles...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Cerrar</button>
+                <button class="btn btn-success" id="markCompletedBtn">
+                    <i class="fas fa-check"></i> Marcar como Realizado
+                </button>
+                <button class="btn btn-primary" id="rescheduleBtn">
+                    <i class="fas fa-calendar-alt"></i> Reprogramar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para marcar como realizado -->
+    <div id="completeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Marcar como Realizado</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="completionDate">Fecha de realización:</label>
+                    <input type="date" id="completionDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="completionNotes">Notas (opcional):</label>
+                    <textarea id="completionNotes" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Cancelar</button>
+                <button class="btn btn-success" id="confirmCompleteBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para reprogramar -->
+    <div id="rescheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reprogramar Mantenimiento</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newDate">Nueva fecha:</label>
+                    <input type="date" id="newDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="rescheduleReason">Motivo:</label>
+                    <textarea id="rescheduleReason" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary close-modal">Cancelar</button>
+                <button class="btn btn-primary" id="confirmRescheduleBtn">Reprogramar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('🚀 Sistema de mantenimientos iniciado');
+
+            // Configurar navegación
+            setupNavigation();
+
+            // Configurar eventos de modales
+            setupModals();
+
+            // Inicializar aplicación principal
+            if (typeof window.maintenanceApp === 'undefined') {
+                window.maintenanceApp = new MaintenanceApp();
+            }
+
+            // Mostrar página inicial basada en hash de URL
+            const hash = window.location.hash.substring(1) || 'dashboard';
+            showPage(hash);
+        });
+
+        function setupNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    // Remover clase active de todos
+                    navItems.forEach(nav => nav.classList.remove('active'));
+
+                    // Agregar clase active al seleccionado
+                    this.classList.add('active');
+
+                    // Mostrar página correspondiente
+                    const page = this.dataset.page;
+                    showPage(page);
+
+                    // Actualizar URL
+                    window.location.hash = page;
+                });
+            });
+        }
+
+        function showPage(pageName) {
+            console.log(`📄 Mostrando página: ${pageName}`);
+
+            // Ocultar todas las páginas
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Mostrar página solicitada
+            const pageElement = document.getElementById(`${pageName}Page`);
+            if (pageElement) {
+                pageElement.classList.add('active');
+
+                // Cargar datos específicos de la página
+                switch (pageName) {
+                    case 'dashboard':
+                        if (window.maintenanceApp) {
+                            window.maintenanceApp.loadDashboard();
+                        }
+                        break;
+                    case 'maintenance':
+                        if (window.maintenanceApp) {
+                            window.maintenanceApp.loadMaintenanceTable();
+                        }
+                        break;
+                    case 'logs':
+                        if (window.maintenanceApp) {
+                            window.maintenanceApp.loadLogs();
+                        }
+                        break;
+                    case 'calendar':
+                        // Inicializar calendario si no está inicializado
+                        if (!window.calendarInitialized && typeof FullCalendar !== 'undefined') {
+                            initCalendar();
+                            window.calendarInitialized = true;
+                        }
+                        break;
+                }
+            } else {
+                console.error(`❌ Página no encontrada: ${pageName}`);
+            }
+        }
+
+        function initCalendar() {
+            console.log('📅 Inicializando calendario...');
+
+            const calendarEl = document.getElementById('calendar');
+            if (!calendarEl) return;
+
+            // Verificar si ya existe un calendario
+            if (window.calendarInstance) {
+                window.calendarInstance.destroy();
+            }
+
+            // Crear nuevo calendario
+            window.calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                firstDay: 1,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,listWeek'
+                },
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día',
+                    list: 'Lista'
+                },
+                events: function (info, successCallback, failureCallback) {
+                    // Cargar eventos desde la API
+                    fetchEvents(info.start, successCallback, failureCallback);
+                },
+                eventClick: function (info) {
+                    console.log('Evento clickeado:', info.event);
+                    // Aquí puedes agregar lógica para mostrar detalles
+                },
+                eventContent: function (info) {
+                    const event = info.event;
+                    return {
+                        html: `
+                            <div class="fc-event-content">
+                                <div class="fc-event-title">${event.title}</div>
+                                <div class="fc-event-details">
+                                    <small>${event.extendedProps?.area || ''}</small>
+                                </div>
+                            </div>
+                        `
+                    };
+                }
+            });
+
+            window.calendarInstance.render();
+
+            // Configurar botones de navegación
+            const prevBtn = document.getElementById('prevMonth');
+            const nextBtn = document.getElementById('nextMonth');
+            const todayBtn = document.getElementById('todayBtn');
+
+            if (prevBtn) {
+                prevBtn.onclick = () => window.calendarInstance.prev();
+            }
+
+            if (nextBtn) {
+                nextBtn.onclick = () => window.calendarInstance.next();
+            }
+
+            if (todayBtn) {
+                todayBtn.onclick = () => window.calendarInstance.today();
+            }
+        }
+
+        async function fetchEvents(start, successCallback, failureCallback) {
+            try {
+                const year = start.getFullYear();
+                const month = start.getMonth() + 1;
+
+                const token = localStorage.getItem('token');
+
+                const response = await fetch(`http://localhost:3000/api/mantenimientos/calendar?year=${year}&month=${month}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar eventos');
+                }
+
+                const mantenimientos = await response.json();
+
+                const events = mantenimientos.map(m => {
+                    let color;
+                    switch (m.estado) {
+                        case 'completado': color = '#28a745'; break;
+                        case 'reprogramado': color = '#ffc107'; break;
+                        default:
+                            switch (m.prioridad) {
+                                case 'alta': color = '#dc3545'; break;
+                                case 'media': color = '#007bff'; break;
+                                case 'baja': color = '#6c757d'; break;
+                                default: color = '#6c757d';
+                            }
+                    }
+
+                    return {
+                        id: m.id,
+                        title: m.equipo,
+                        start: m.fecha,
+                        extendedProps: m,
+                        backgroundColor: color,
+                        borderColor: color,
+                        textColor: '#fff'
+                    };
+                });
+
+                successCallback(events);
+
+            } catch (error) {
+                console.error('Error al cargar eventos del calendario:', error);
+                failureCallback(error);
+            }
+        }
+
+        function setupModals() {
+            // Botones para cerrar modales
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    closeAllModals();
+                });
+            });
+
+            // Cerrar modal al hacer clic fuera
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function (e) {
+                    if (e.target === this) {
+                        closeAllModals();
+                    }
+                });
+            });
+
+            // Cerrar con tecla Escape
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeAllModals();
+                }
+            });
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.remove('active');
+            });
+        }
+
+        // Exponer funciones globalmente
+        window.showPage = showPage;
+        window.closeAllModals = closeAllModals;
+    </script>
+</body>
+
+</html>

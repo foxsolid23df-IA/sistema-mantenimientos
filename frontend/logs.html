@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Movimientos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav {
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            color: #007bff;
+            background-color: #e7f1ff;
+        }
+
+        .table-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        td {
+            font-size: 0.95rem;
+        }
+
+        .logout {
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            color: white;
+            border: none;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+
+        .logout:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Badge styles for actions */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-import {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .badge-update {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-delete {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Historial de Movimientos</h1>
+        <div class="user-info">
+            <span id="userName">Usuario</span>
+            <button class="logout" onclick="logout()">Cerrar Sesión</button>
+        </div>
+    </header>
+    <div class="container">
+        <div class="nav">
+            <a href="calendario.html">Calendario</a>
+            <a href="logs.html" class="active"> Logs</a>
+        </div>
+        <div class="table-container">
+            <table id="logsTable">
+                <thead>
+                    <tr>
+                        <th>Fecha Registro</th>
+                        <th>Equipo</th>
+                        <th>Acción</th>
+                        <th>Anterior</th>
+                        <th>Nueva</th>
+                        <th>Usuario/PC</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los logs se cargarán aquí -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!token || !user) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('userName').textContent = user.nombre;
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            cargarLogs();
+        });
+
+        function cargarLogs() {
+            fetch('http://localhost:3000/api/logs', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+                .then(response => response.json())
+                .then(logs => {
+                    const tbody = document.querySelector('#logsTable tbody');
+                    tbody.innerHTML = '';
+                    if (logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem;">No hay registros disponibles</td></tr>';
+                        return;
+                    }
+                    logs.forEach(log => {
+                        const row = document.createElement('tr');
+
+                        // Simple logic to style actions slightly differently (optional)
+                        let actionClass = 'badge-update';
+                        if (log.accion.includes('IMPORT')) actionClass = 'badge-import';
+                        if (log.accion.includes('DELETE')) actionClass = 'badge-delete';
+
+                        row.innerHTML = `
+                        <td>${new Date(log.fecha_registro).toLocaleString()}</td>
+                        <td style="font-weight:500;">${log.equipo}</td>
+                        <td><span class="badge ${actionClass}">${log.accion}</span></td>
+                        <td style="color:#666;">${log.valor_anterior || '-'}</td>
+                        <td style="color:#007bff;">${log.valor_nuevo || '-'}</td>
+                        <td>
+                            <div>${log.usuario}</div>
+                            <div style="font-size:0.8rem; color:#888;">${log.pc}</div>
+                        </td>
+                        <td style="font-family:monospace;">${log.ip}</td>
+                    `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error(error);
+                    // In a real app we might show a toast, but for now this is fine
+                    const tbody = document.querySelector('#logsTable tbody');
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding: 2rem;">Error al conectar con el servidor</td></tr>';
+                });
+        }
+    </script>
+</body>
+
+</html>
