@@ -4,104 +4,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Mantenimientos</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .login-container {
-            background-color: white;
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 350px;
-        }
-
-        h2 {
-            text-align: center;
-            color: #1a1a1a;
-            margin-bottom: 2rem;
-            font-size: 1.8rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #555;
-            font-weight: 600;
-        }
-
-        input {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-
-        button {
-            width: 100%;
-            padding: 0.9rem;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .error {
-            color: #dc3545;
-            margin-top: 1rem;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-    </style>
+    <title>Login - Gestión de Mantenimientos</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body>
-    <div class="login-container">
-        <h2>Iniciar Sesión</h2>
+<body style="background: linear-gradient(135deg, var(--primary-main), var(--primary-dark)); height: 100vh; display: flex; align-items: center; justify-content: center;">
+
+    <div class="card" style="width: 100%; max-width: 400px; padding: 2rem;">
+        <div class="text-center" style="margin-bottom: 2rem; text-align: center;">
+            <i class="fas fa-tools" style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1rem;"></i>
+            <h2 style="color: var(--primary-main); font-weight: 700;">GRUPO ACASER</h2>
+            <p style="color: var(--text-secondary);">Sistema de Gestión</p>
+        </div>
+
         <form id="loginForm">
             <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" required placeholder="correo@ejemplo.com">
+                <label for="email">Correo Electrónico</label>
+                <div style="position: relative;">
+                    <i class="fas fa-envelope" style="position: absolute; left: 15px; top: 13px; color: var(--text-muted);"></i>
+                    <input type="email" id="email" class="form-control" style="padding-left: 40px;" placeholder="nombre@empresa.com" required>
+                </div>
             </div>
+            
             <div class="form-group">
-                <label for="password">Contraseña:</label>
-                <input type="password" id="password" required placeholder="••••••••">
+                <label for="password">Contraseña</label>
+                <div style="position: relative;">
+                    <i class="fas fa-lock" style="position: absolute; left: 15px; top: 13px; color: var(--text-muted);"></i>
+                    <input type="password" id="password" class="form-control" style="padding-left: 40px;" placeholder="••••••••" required>
+                </div>
             </div>
-            <button type="submit">Ingresar</button>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.8rem;">
+                Iniciar Sesión
+            </button>
         </form>
-        <div id="error" class="error"></div>
+
+        <div id="error" class="alert alert-danger" style="display: none; margin-top: 1rem;"></div>
+
+        <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted);">
+            <p style="margin-bottom: 0.5rem;"><strong>Credenciales Demo:</strong></p>
+            <div style="display: flex; justify-content: space-between;">
+                <span>admin@empresa.com</span>
+                <code>admin123</code>
+            </div>
+        </div>
     </div>
 
-    <script src="js/auth.js"></script>
-</body>
+    <script type="module">
+        import { auth } from './js/services/auth.js';
 
+        // Prellenar para demo
+        document.getElementById('email').value = 'admin@empresa.com';
+        // document.getElementById('password').value = 'admin123';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = e.target.querySelector('button');
+            const errorDiv = document.getElementById('error');
+
+            // UI Loading
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+            errorDiv.style.display = 'none';
+
+            try {
+                const result = await auth.login(email, password);
+                
+                if (result.success) {
+                    window.location.href = 'index.html';
+                } else {
+                    throw new Error(result.error || 'Credenciales incorrectas');
+                }
+            } catch (error) {
+                console.error(error);
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    </script>
+</body>
 </html>
