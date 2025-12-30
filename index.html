@@ -180,7 +180,7 @@
     </header>
 
     <!-- Sidebar -->
-    <nav class="sidebar">
+    <nav class="sidebar glass-effect">
         <ul class="nav-menu">
             <li class="nav-item active" data-page="dashboard">
                 <a href="#"><i class="fas fa-home"></i> <span>Dashboard</span></a>
@@ -548,8 +548,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
+    <script type="module" src="js/app.js"></script>
     <script>
         // Inicializar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function () {
@@ -562,9 +561,7 @@
             setupModals();
 
             // Inicializar aplicación principal
-            if (typeof window.maintenanceApp === 'undefined') {
-                window.maintenanceApp = new MaintenanceApp();
-            }
+            // window.maintenanceApp se inicializa en app.js
 
             // Mostrar página inicial basada en hash de URL
             const hash = window.location.hash.substring(1) || 'dashboard';
